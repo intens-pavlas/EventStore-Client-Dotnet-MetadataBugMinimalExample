@@ -1,8 +1,9 @@
 ﻿namespace ConsoleApp1
 {
+    using System;
+    using System.Diagnostics;
     using System.Text.Json;
     using EventStore.Client;
-    using static System.Net.WebRequestMethods;
 
     internal class Program
     {
@@ -21,11 +22,21 @@
                              ImportantData = "I wrote my first event!"
                          };
 
-            var eventData = new EventData(
-                                          Uuid.NewUuid(),
-                                          "TestEvent",
-                                          JsonSerializer.SerializeToUtf8Bytes(evt)
-                                         );
+
+            IDictionary<String, String> metadata = new Dictionary<String, String>();
+
+            ActivityTraceId activityId = ActivityTraceId.CreateRandom();
+            ActivitySpanId activitySpanId = ActivitySpanId.CreateRandom();
+
+            metadata.Add("$traceId", activityId.ToHexString());
+            metadata.Add("$spanId", activitySpanId.ToHexString());
+
+            EventData eventData = new(
+                                      Uuid.NewUuid(),
+                                      "TestEvent",
+                                      JsonSerializer.SerializeToUtf8Bytes(evt),
+                                      JsonSerializer.SerializeToUtf8Bytes(metadata)
+                                     );
 
             await client.AppendToStreamAsync(
                                              streamName,
@@ -40,10 +51,13 @@
             UserCredentials userCredentials = new("admin", "changeit");
             EventStorePersistentSubscriptionsClient persistentSubscriptionsClient = new(EventStoreClientSettings.Create(connectionString));
 
-            PersistentSubscriptionSettings persistentSubscriptionSettings = new();
+            PersistentSubscriptionSettings persistentSubscriptionSettings = new(true, 
+                                                                                new StreamPosition(0), 
+                                                                                maxRetryCount: 0);
 
 
-            try{
+            try
+            {
                 await persistentSubscriptionsClient.DeleteToStreamAsync(streamName, groupName);
             }
             catch(Exception e){
