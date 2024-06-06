@@ -45,16 +45,12 @@
                                              cancellationToken: CancellationToken.None
                                             );
 
-
-
-
             UserCredentials userCredentials = new("admin", "changeit");
             EventStorePersistentSubscriptionsClient persistentSubscriptionsClient = new(EventStoreClientSettings.Create(connectionString));
 
             PersistentSubscriptionSettings persistentSubscriptionSettings = new(true, 
                                                                                 new StreamPosition(0), 
                                                                                 maxRetryCount: 0);
-
 
             try
             {
